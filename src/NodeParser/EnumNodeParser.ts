@@ -2,7 +2,7 @@ import ts from "typescript";
 import type { Context } from "../NodeParser.js";
 import type { SubNodeParser } from "../SubNodeParser.js";
 import type { BaseType } from "../Type/BaseType.js";
-import type { EnumValue } from "../Type/EnumType.js";
+import type { EnumMember, EnumValue } from "../Type/EnumType.js";
 import { EnumType } from "../Type/EnumType.js";
 import { isNodeHidden } from "../Utils/isHidden.js";
 import { getKey } from "../Utils/nodeKey.js";
@@ -14,14 +14,60 @@ export class EnumNodeParser implements SubNodeParser {
         return node.kind === ts.SyntaxKind.EnumDeclaration || node.kind === ts.SyntaxKind.EnumMember;
     }
     public createType(node: ts.EnumDeclaration | ts.EnumMember, context: Context): BaseType {
-        const members = node.kind === ts.SyntaxKind.EnumDeclaration ? node.members.slice() : [node];
+        const rawMembers = node.kind === ts.SyntaxKind.EnumDeclaration ? node.members.slice() : [node];
+        const visibleMembers = rawMembers.filter((member: ts.EnumMember) => !isNodeHidden(member));
+
+        const members: EnumMember[] = visibleMembers.map((member, index) => ({
+            value: this.getMemberValue(member, index),
+            name: this.getMemberName(member),
+            description: this.getMemberDescription(member),
+        }));
 
         return new EnumType(
             `enum-${getKey(node, context)}`,
-            members
-                .filter((member: ts.EnumMember) => !isNodeHidden(member))
-                .map((member, index) => this.getMemberValue(member, index)),
+            members.map((m) => m.value),
+            members,
         );
+    }
+
+    protected getMemberName(member: ts.EnumMember): string {
+        if (ts.isIdentifier(member.name)) {
+            return member.name.text;
+        }
+        if (ts.isStringLiteral(member.name)) {
+            return member.name.text;
+        }
+        return member.name.getText();
+    }
+
+    protected getMemberDescription(member: ts.EnumMember): string | undefined {
+        // Try JSDoc/leading documentation comment via symbol
+        const symbol = this.typeChecker.getSymbolAtLocation(member.name);
+        if (symbol) {
+            const comments = symbol.getDocumentationComment(this.typeChecker);
+            if (comments.length > 0) {
+                const description = ts.displayPartsToString(comments).trim();
+                if (description) {
+                    return description;
+                }
+            }
+        }
+
+        // Fall back to trailing single-line comment on the same line (e.g. `Up = 1, // comment`)
+        const sourceFile = member.getSourceFile();
+        const text = sourceFile.text;
+        const memberEnd = member.getEnd();
+        const lineEnd = text.indexOf("\n", memberEnd);
+        const lineText = text.substring(memberEnd, lineEnd === -1 ? text.length : lineEnd);
+        const trailingMatch = lineText.match(/\/\/(.*)/);
+        if (trailingMatch) {
+            const description = trailingMatch[1].trim();
+            if (description) {
+                return description;
+            }
+        }
+
+        return undefined;
     }
 
     protected getMemberValue(member: ts.EnumMember, index: number): EnumValue {

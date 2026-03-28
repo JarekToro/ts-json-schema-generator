@@ -1,0 +1,22 @@
+{
+  "$ref": "#/definitions/Enum",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "Enum": {
+      "oneOf": [
+        {
+          "const": 0,
+          "title": "A"
+        },
+        {
+          "const": 1,
+          "title": "B"
+        },
+        {
+          "const": "str",
+          "title": "C"
+        }
+      ]
+    }
+  }
+}

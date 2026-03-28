@@ -4,12 +4,19 @@ import { NullType } from "./NullType.js";
 
 export type EnumValue = string | boolean | number | null;
 
+export interface EnumMember {
+    value: EnumValue;
+    name: string;
+    description?: string;
+}
+
 export class EnumType extends BaseType {
     private types: BaseType[];
 
     public constructor(
         private id: string,
         private values: readonly EnumValue[],
+        private members?: readonly EnumMember[],
     ) {
         super();
         this.types = values.map((value) => (value == null ? new NullType() : new LiteralType(value)));
@@ -25,5 +32,9 @@ export class EnumType extends BaseType {
 
     public getTypes(): BaseType[] {
         return this.types;
+    }
+
+    public getMembers(): readonly EnumMember[] | undefined {
+        return this.members;
     }
 }

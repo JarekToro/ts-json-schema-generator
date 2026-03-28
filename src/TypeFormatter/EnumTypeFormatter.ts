@@ -1,4 +1,5 @@
 import type { JSONSchema7TypeName } from "json-schema";
+import type { CompletedConfig } from "../Config.js";
 import type { Definition } from "../Schema/Definition.js";
 import type { SubTypeFormatter } from "../SubTypeFormatter.js";
 import type { BaseType } from "../Type/BaseType.js";
@@ -7,10 +8,25 @@ import { typeName } from "../Utils/typeName.js";
 import { uniqueArray } from "../Utils/uniqueArray.js";
 
 export class EnumTypeFormatter implements SubTypeFormatter {
+    public constructor(private config?: Pick<CompletedConfig, "labeledEnums">) {}
+
     public supportsType(type: BaseType): boolean {
         return type instanceof EnumType;
     }
     public getDefinition(type: EnumType): Definition {
+        const members = type.getMembers();
+
+        if (this.config?.labeledEnums && members && members.length > 0) {
+            const oneOf = members.map((member) => {
+                const def: Definition = { const: member.value, title: member.name };
+                if (member.description) {
+                    def.description = member.description;
+                }
+                return def;
+            });
+            return oneOf.length === 1 ? oneOf[0] : { oneOf };
+        }
+
         const values = uniqueArray(type.getValues());
         const types = uniqueArray(values.map(typeName));
 

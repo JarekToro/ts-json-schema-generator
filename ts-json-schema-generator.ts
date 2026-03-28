@@ -58,6 +58,7 @@ const args = new Command()
         [],
     )
     .option("--additional-properties", "Allow additional properties for objects with no index signature", false)
+    .option("--labeled-enums", "Output enums as `oneOf` with per-value `const` and `title` (the member name)", false)
     .version(pkg.version)
     .parse(process.argv)
     .opts();
@@ -81,6 +82,7 @@ const config: Config = {
     extraTags: args.validationKeywords,
     additionalProperties: args.additionalProperties,
     functions: args.functions,
+    labeledEnums: args.labeledEnums,
 };
 
 try {

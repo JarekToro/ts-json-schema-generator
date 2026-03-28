@@ -132,6 +132,14 @@ export interface Config {
     functions?: FunctionOptions;
 
     /**
+     * When true, generates enum schemas as `oneOf` with per-value `const` and `title` (the member name).
+     * If an enum member has a JSDoc comment or trailing line comment, it is included as `description`.
+     * This is the spec-compliant way to attach human-readable labels to individual enum values.
+     * @default false
+     */
+    labeledEnums?: boolean;
+
+    /**
      * Pre-compiled TypeScript Program instance to use.
      * Bypasses the default setup of a TypeScript program, and so some configuration options may not be applied.
      * Useful for programmatic usage with existing TypeScript compilation, or for vfs scenarios where you do not want file-system representation.
@@ -158,4 +166,5 @@ export const DEFAULT_CONFIG: Omit<Required<Config>, "path" | "type" | "schemaId"
     additionalProperties: false,
     discriminatorType: "json-schema",
     functions: "comment",
+    labeledEnums: false,
 };
