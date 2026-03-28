@@ -56,14 +56,20 @@ export class EnumNodeParser implements SubNodeParser {
         // Fall back to trailing single-line comment on the same line (e.g. `Up = 1, // comment`)
         const sourceFile = member.getSourceFile();
         const text = sourceFile.text;
-        const memberEnd = member.getEnd();
-        const lineEnd = text.indexOf("\n", memberEnd);
-        const lineText = text.substring(memberEnd, lineEnd === -1 ? text.length : lineEnd);
-        const trailingMatch = lineText.match(/\/\/(.*)/);
-        if (trailingMatch) {
-            const description = trailingMatch[1].trim();
-            if (description) {
-                return description;
+        let pos = member.getEnd();
+        // Skip an optional trailing comma (enum members are separated by commas, but the
+        // comma token is not part of the EnumMember node itself)
+        if (text[pos] === ",") {
+            pos++;
+        }
+        const ranges = ts.getTrailingCommentRanges(text, pos);
+        if (ranges && ranges.length > 0) {
+            const range = ranges[0];
+            if (range.kind === ts.SyntaxKind.SingleLineCommentTrivia) {
+                const description = text.substring(range.pos + 2, range.end).trim();
+                if (description) {
+                    return description;
+                }
             }
         }
 

@@ -24,7 +24,7 @@ export class EnumTypeFormatter implements SubTypeFormatter {
                 }
                 return def;
             });
-            return oneOf.length === 1 ? oneOf[0] : { oneOf };
+            return { oneOf };
         }
 
         const values = uniqueArray(type.getValues());
